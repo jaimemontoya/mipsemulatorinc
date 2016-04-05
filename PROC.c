@@ -113,112 +113,177 @@ int main(int argc, char * argv[]) {
     printf("The value of imme is:%i\n", imme);
     printf("The value of sa is:%zu\n", sa);
 
-        switch(opcode) {
-            case 0:                     // SPECIAL = 0
+    switch(opcode) {
+        case 0:                     // SPECIAL = 0
 
-            switch(functionvalue) {
-                case 0: // SLL
-                    RegFile[rd] = RegFile[rt] << RegFile[sa];
-                    //writeWord(rd, (rt << sa), true);
-                    break;
-                case 2: // SRL
-                    writeWord(rd, (rt >> sa), true);
-                    break;
-                case 16: // MFHI
-                    writeWord(rd, hi, true);
-                    break;
-                case 18: // MFLO
-                    writeWord(rd, lo, true);
-                    break;
-                case 24: // MULT
-                    ans64 = ((uint64_t) readWord(rs, true) * (uint64_t) readWord(rt, true));
-                    uint32_t low = ((ans64 << 32) >> 32);
-                    uint32_t high = (ans64 >> 32);
-                    writeWord(lo, low, true);
-                    writeWord(hi, high, true);
-                    break;
-                case 26: // DIV
-                    writeWord(lo, readWord(rs, true) / readWord(rt, true), true);
-                    writeWord(hi, readWord(rs, true) % readWord(rt, true), true);
-                    break;
-                case 32:             // ADD
-                    writeWord(rd, readWord(rs, true) + readWord(rt, true), true);
-                    break;
-                case 34:            // SUB
-                    writeWord(rd, readWord(rs, true) - readWord(rt, true), true);
-                    break;
-                case 38: // XOR
-                    writeWord(rd, (readWord(rs, true) ^ readWord(rt, true)), true);
-                    break;
+        switch(functionvalue) {
+            case 0: // SLL
+                RegFile[rd] = RegFile[rt] << RegFile[sa];
+                //writeWord(rd, (rt << sa), true);
+                break;
+            case 2: // SRL
+                RegFile[rd] = (RegFile[rt] >> RegFile[sa]);
+                break;
 
-            }
-            break;
+            case 3: // SRA
+                break;
 
-            case 1:                     // REGIMM = 1
+            case 4: // SSLV
                 break;
-            case 2:                     // J
+
+            case 6: // SRLV
                 break;
-            case 3:                     // JAL
+
+            case 7: // SRAV
                 break;
-            case 4:                     // BEQ
+
+            case 8: // JR
                 break;
-            case 5:                     // BNE
+
+            case 9: // JALR
                 break;
-            case 6:                     // BLEZ
+
+            case 16: // MFHI
+                RegFile[rd] = RegFile[hi];
                 break;
-            case 7:                     // BGTZ
+
+            case 17: // MTHI
                 break;
-            case 8:                     // ADDI
-                writeWord(rt, readWord(rs, true) + imme, true);
+
+            case 18: // MFLO
+                RegFile[rd] = RegFile[lo];
                 break;
-            case 9:                     // ADDIU
+
+            case 19: // MTLO
                 break;
-            case 10:                    // SLTI
+
+            case 24: // MULT
+                ans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
+                RegFile[lo] = (uint32_t)((ans64 << 32) >> 32);
+                RegFile[hi] = (uint32_t)(ans64 >> 32);
                 break;
-            case 11:                    // SLTIU
+
+            case 25: // MULTU
                 break;
-            case 12:                    // ANDI
+
+            case 26: // DIV
+                RegFile[lo] = RegFile[rs] / RegFile[rt];
+                RegFile[hi] = RegFile[rs] % RegFile[rt];
                 break;
-            case 13:                    // ORI
+
+            case 27:  // DIVU
                 break;
-            case 14:                    // XORI
+
+            case 32:             // ADD
+                RegFile[rd] = RegFile[rs] + RegFile[rt];
                 break;
-            case 15:                    // LUI
+
+            case 33:            // ADDU
                 break;
-            case 20:                    // BEQL
+
+            case 34:            // SUB
+                RegFile[rd] = RegFile[rs] - RegFile[rt];
                 break;
-            case 21:                    // BNEL
+
+            case 35:            // SUBU
                 break;
-            case 22:                    // BLEZL
+
+            case 36:  // AND
                 break;
-            case 32:                    // LB
+
+            case 37: // OR
                 break;
-            case 33:                    // LH
+
+            case 38: // XOR
+                RegFile[rd] = RegFile[rs] ^ RegFile[rt];
                 break;
-            case 34:                    // LWL
+
+            case 39: // NOR
                 break;
-            case 35:                    // LW
+
+            case 42: // SLT
                 break;
-            case 36:                    // LBU
+
+            case 43: // SLTU
                 break;
-            case 37:                    // LHU
-                break;
-            case 38:                    // LWR
-                break;
-            case 40:                    // SB
-                break;
-            case 41:                    // SH
-                break;
-            case 42:                    // SWL
-                break;
-            case 43:                    // SW
-                break;
-            case 46:                    // SWR
-                break;
+
         }
+        break;
 
-        PC = PC + 4;
-    } //end fori
+        case 1:                     // REGIMM = 1
+            break;
+        case 2:                     // J
+            break;
+        case 3:                     // JAL
+            break;
+        case 4:                     // BEQ
+            break;
+        case 5:                     // BNE
+            break;
+        case 6:                     // BLEZ
+            break;
+        case 7:                     // BGTZ
+            break;
+        case 8:                     // ADDI
+            RegFile[rt] = RegFile[rs] + imme;
+            break;
+        case 9:                     // ADDIU
+            break;
+        case 10:                    // SLTI
+            break;
+        case 11:                    // SLTIU
+            break;
+        case 12:                    // ANDI
+            break;
+        case 13:                    // ORI
+
+            break;
+        case 14:                    // XORI
+            // Format: XORI rt, rs, immediate
+            RegFile[rt] = RegFile[rs] ^ imme;
+            break;
+        case 15:                    // LUI
+            // Format: LUI rt, immediate
+            RegFile[rt] = imme;
+            break;
+        case 20:                    // BEQL
+            break;
+        case 21:                    // BNEL
+            break;
+        case 22:                    // BLEZL
+            break;
+        case 32:                    // LB
+            break;
+        case 33:                    // LH
+            break;
+        case 34:                    // LWL
+            break;
+        case 35:                    // LW
+            break;
+        case 36:                    // LBU
+            break;
+        case 37:                    // LHU
+            break;
+        case 38:                    // LWR
+            break;
+        case 40:                    // SB
+            // Format: SB rt, offset(base)
+            // memory[base+offset] ← rt
+            break;
+        case 41:                    // SH
+            // SH rt, offset(base)
+            // memory[base+offset] ← rt
+            break;
+        case 42:                    // SWL
+            break;
+        case 43:                    // SW
+            break;
+        case 46:                    // SWR
+            break;
+    }
+
+    PC = PC + 4;
+} //end fori
 
 
     //Close file pointers & free allocated Memory
