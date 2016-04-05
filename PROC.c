@@ -9,6 +9,9 @@
 //Stats
 
 uint32_t DynInstCount = 0;
+uint32_t lo = 32;
+uint32_t hi = 33;
+uint64_t ans64;
 
 void write_initialization_vector(uint32_t sp, uint32_t gp, uint32_t start) {
     printf("\n ----- BOOT Sequence ----- \n");
@@ -20,33 +23,38 @@ void write_initialization_vector(uint32_t sp, uint32_t gp, uint32_t start) {
 
 }
 
-int get_opcode(uint32_t hs) {
+uint32_t get_opcode(uint32_t hs) {           // find opcode - first step of decoding
     return (hs >> 26);
 }
 
-int get_function(uint32_t hs) {
+uint32_t get_function(uint32_t hs) {         // get function if opcode 0 or 1
     hs = hs << 26;
     return (hs >> 26);
 }
 
-int get_rs(uint32_t hs) {
+uint32_t get_rs(uint32_t hs) {       // rs is always operated on
     hs = hs << 6;
     return (hs >> 27);
 }
 
-int get_rt(uint32_t hs) {
+uint32_t get_rt(uint32_t hs) {       // destination register for immediates, else it's operated on
     hs = (hs << 11);
     return (hs >> 27);
 }
 
-int get_rd(uint32_t hs) {
+uint32_t get_rd(uint32_t hs) {       // destination register for special
     hs = (hs << 16);
     return (hs >> 27);
 }
 
-int get_immediate(uint32_t hs) {
-    hs = (hs << 16);
-    hs = (hs >> 16);
+int32_t get_immediate(int32_t hs) {            // immediate constant to operate on
+    hs = ((int32_t) hs << 16);                  // still need to test for negatives
+    return (hs >> 16);
+}
+
+uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts
+    hs = (hs << 21);
+    return (hs >> 27);
 }
 
 int main(int argc, char * argv[]) {
@@ -87,97 +95,126 @@ int main(int argc, char * argv[]) {
     //Add your implementation here
     /********************************/
 
-        uint32_t opcode = get_opcode(CurrentInstruction);
-	uint32_t functionvalue = get_function(CurrentInstruction);
-	
-	printf("Iteration:%i\n", i);
-	printf("The value of opcode is:%zu\n", opcode);
-	printf("The value of function is:%zu\n", functionvalue);
+    uint32_t opcode = get_opcode(CurrentInstruction);
+    uint32_t functionvalue = get_function(CurrentInstruction);
+    uint32_t rs = get_rs(CurrentInstruction);
+    uint32_t rt = get_rt(CurrentInstruction);
+    uint32_t rd = get_rd(CurrentInstruction);           // destination register
+    int32_t imme = get_immediate(CurrentInstruction);
+    uint32_t sa = get_sa(CurrentInstruction);           // shift amount
+
+
+    printf("Iteration:%i\n", i);
+    printf("The value of opcode is:%zu\n", opcode);
+    printf("The value of function is:%zu\n", functionvalue);
+    printf("The value of rs is:%zu\n", rs);
+    printf("The value of rt is:%zu\n", rt);
+    printf("The value of rd is:%zu\n", rd);
+    printf("The value of imme is:%i\n", imme);
+    printf("The value of sa is:%zu\n", sa);
 
         switch(opcode) {
             case 0:                     // SPECIAL = 0
-	        switch(functionvalue) {
-		    case 32: // ADD
-		        
-		    break;
-		    case 34: // SUB
-		    break;
-		    case 24: // MULT
-		    break;
-		    case 18: // MFLO
-		    break;
-		    case 38: // XOR
-		    break;
-		    case 0: // SLL
-		    break;
-		    case 2: // SRL
-		    break;
-		    case 26: // DIV
-		    break;
-		    case 16: // MFHI
-		    break;
-		}
-		break;
+
+            switch(functionvalue) {
+                case 0: // SLL
+                    RegFile[rd] = RegFile[rt] << RegFile[sa];
+                    //writeWord(rd, (rt << sa), true);
+                    break;
+                case 2: // SRL
+                    writeWord(rd, (rt >> sa), true);
+                    break;
+                case 16: // MFHI
+                    writeWord(rd, hi, true);
+                    break;
+                case 18: // MFLO
+                    writeWord(rd, lo, true);
+                    break;
+                case 24: // MULT
+                    ans64 = ((uint64_t) readWord(rs, true) * (uint64_t) readWord(rt, true));
+                    uint32_t low = ((ans64 << 32) >> 32);
+                    uint32_t high = (ans64 >> 32);
+                    writeWord(lo, low, true);
+                    writeWord(hi, high, true);
+                    break;
+                case 26: // DIV
+                    writeWord(lo, readWord(rs, true) / readWord(rt, true), true);
+                    writeWord(hi, readWord(rs, true) % readWord(rt, true), true);
+                    break;
+                case 32:             // ADD
+                    writeWord(rd, readWord(rs, true) + readWord(rt, true), true);
+                    break;
+                case 34:            // SUB
+                    writeWord(rd, readWord(rs, true) - readWord(rt, true), true);
+                    break;
+                case 38: // XOR
+                    writeWord(rd, (readWord(rs, true) ^ readWord(rt, true)), true);
+                    break;
+
+            }
+            break;
+
             case 1:                     // REGIMM = 1
-		break;
+                break;
             case 2:                     // J
-		break;
+                break;
             case 3:                     // JAL
-		break;
+                break;
             case 4:                     // BEQ
-		break;
+                break;
             case 5:                     // BNE
-		break;
+                break;
             case 6:                     // BLEZ
-		break;
+                break;
             case 7:                     // BGTZ
-		break;
+                break;
             case 8:                     // ADDI
-		break;
+                writeWord(rt, readWord(rs, true) + imme, true);
+                break;
             case 9:                     // ADDIU
-		break;
+                break;
             case 10:                    // SLTI
-		break;
+                break;
             case 11:                    // SLTIU
-		break;
+                break;
             case 12:                    // ANDI
-		break;
+                break;
             case 13:                    // ORI
-		break;
+                break;
             case 14:                    // XORI
-		break;
+                break;
             case 15:                    // LUI
-		break;
+                break;
             case 20:                    // BEQL
-		break;
+                break;
             case 21:                    // BNEL
-		break;
+                break;
             case 22:                    // BLEZL
-		break;
+                break;
             case 32:                    // LB
-		break;
+                break;
             case 33:                    // LH
-		break;
+                break;
             case 34:                    // LWL
-		break;
+                break;
             case 35:                    // LW
-		break;
+                break;
             case 36:                    // LBU
-		break;
+                break;
             case 37:                    // LHU
-		break;
+                break;
             case 38:                    // LWR
-		break;
+                break;
             case 40:                    // SB
-		break;
+                break;
             case 41:                    // SH
-		break;
+                break;
             case 42:                    // SWL
-		break;
+                break;
             case 43:                    // SW
-		break;
+                break;
             case 46:                    // SWR
-		break;
+                break;
         }
 
         PC = PC + 4;
