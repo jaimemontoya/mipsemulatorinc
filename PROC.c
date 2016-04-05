@@ -29,6 +29,26 @@ int get_function(uint32_t hs) {
     return (hs >> 26);
 }
 
+int get_rs(uint32_t hs) {
+    hs = hs << 6;
+    return (hs >> 27);
+}
+
+int get_rt(uint32_t hs) {
+    hs = (hs << 11);
+    return (hs >> 27);
+}
+
+int get_rd(uint32_t hs) {
+    hs = (hs << 16);
+    return (hs >> 27);
+}
+
+int get_immediate(uint32_t hs) {
+    hs = (hs << 16);
+    hs = (hs >> 16);
+}
+
 int main(int argc, char * argv[]) {
 
     int MaxInst = 0;
@@ -78,10 +98,23 @@ int main(int argc, char * argv[]) {
             case 0:                     // SPECIAL = 0
 	        switch(functionvalue) {
 		    case 32: // ADD
+		        
 		    break;
 		    case 34: // SUB
-I		    break;
+		    break;
 		    case 24: // MULT
+		    break;
+		    case 18: // MFLO
+		    break;
+		    case 38: // XOR
+		    break;
+		    case 0: // SLL
+		    break;
+		    case 2: // SRL
+		    break;
+		    case 26: // DIV
+		    break;
+		    case 16: // MFHI
 		    break;
 		}
 		break;
