@@ -12,6 +12,7 @@ uint32_t DynInstCount = 0;
 uint32_t lo = 32;
 uint32_t hi = 33;
 uint64_t ans64;
+uint32_t temp;
 
 void write_initialization_vector(uint32_t sp, uint32_t gp, uint32_t start) {
     printf("\n ----- BOOT Sequence ----- \n");
@@ -52,8 +53,13 @@ int32_t get_immediate(int32_t hs) {            // immediate constant to operate 
     return (hs >> 16);
 }
 
+uint32_t get_offset(uint32_t hs) {            // immediate constant to operate on
+    hs = (hs << 16);                  // still need to test for negatives
+    return (hs >> 16);
+}
+
 uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts
-    hs = (hs << 21);
+    hs = (hs << 21);       
     return (hs >> 27);
 }
 
@@ -98,12 +104,14 @@ int main(int argc, char * argv[]) {
     uint32_t opcode = get_opcode(CurrentInstruction);
     uint32_t functionvalue = get_function(CurrentInstruction);
     uint32_t rs = get_rs(CurrentInstruction);
+    uint32_t base = get_rs(CurrentInstruction);
     uint32_t rt = get_rt(CurrentInstruction);
     uint32_t rd = get_rd(CurrentInstruction);           // destination register
     int32_t imme = get_immediate(CurrentInstruction);
+    uint32_t offset = get_offset(CurrentInstruction);
     uint32_t sa = get_sa(CurrentInstruction);           // shift amount
 
-
+    
     printf("Iteration:%i\n", i);
     printf("The value of opcode is:%zu\n", opcode);
     printf("The value of function is:%zu\n", functionvalue);
@@ -113,177 +121,228 @@ int main(int argc, char * argv[]) {
     printf("The value of imme is:%i\n", imme);
     printf("The value of sa is:%zu\n", sa);
 
-    switch(opcode) {
-        case 0:                     // SPECIAL = 0
+        switch(opcode) {
+            case 0:                     // SPECIAL = 0
 
-        switch(functionvalue) {
-            case 0: // SLL
-                RegFile[rd] = RegFile[rt] << RegFile[sa];
-                //writeWord(rd, (rt << sa), true);
-                break;
-            case 2: // SRL
-                RegFile[rd] = (RegFile[rt] >> RegFile[sa]);
-                break;
+            switch(functionvalue) {
+                case 0: // SLL
+                    if (sa == 0 && rd == 0 && rt == 0) {                // NOP
+                        break;
+                    }
+                    else {
+                        RegFile[rd] = RegFile[rt] << RegFile[sa];       // SLL
+                        break;
+                    }
+                    //writeWord(rd, (rt << sa), true);
 
-            case 3: // SRA
-                break;
+                case 2: // SRL
+                    RegFile[rd] = (RegFile[rt] >> RegFile[sa]);
+                    break;
 
-            case 4: // SSLV
-                break;
+                case 3: // SRA
+                    break;
 
-            case 6: // SRLV
-                break;
+                case 4: // SSLV
+                    break;
 
-            case 7: // SRAV
-                break;
+                case 6: // SRLV
+                    break;
 
-            case 8: // JR
-                break;
+                case 7: // SRAV
+                    break;
 
-            case 9: // JALR
-                break;
+                case 8: // JR
+                    break;
 
-            case 16: // MFHI
-                RegFile[rd] = RegFile[hi];
-                break;
+                case 9: // JALR
+                    break;
 
-            case 17: // MTHI
-                break;
+                case 16: // MFHI
+                    RegFile[rd] = RegFile[hi];
+                    break;
 
-            case 18: // MFLO
-                RegFile[rd] = RegFile[lo];
-                break;
+                case 17: // MTHI
+                    break;
 
-            case 19: // MTLO
-                break;
+                case 18: // MFLO
+                    RegFile[rd] = RegFile[lo];
+                    break;
 
-            case 24: // MULT
-                ans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
-                RegFile[lo] = (uint32_t)((ans64 << 32) >> 32);
-                RegFile[hi] = (uint32_t)(ans64 >> 32);
-                break;
+                case 19: // MTLO
+                    break;
 
-            case 25: // MULTU
-                break;
+                case 24: // MULT
+                    ans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
+                    RegFile[lo] = (uint32_t)((ans64 << 32) >> 32);
+                    RegFile[hi] = (uint32_t)(ans64 >> 32);
+                    break;
 
-            case 26: // DIV
-                RegFile[lo] = RegFile[rs] / RegFile[rt];
-                RegFile[hi] = RegFile[rs] % RegFile[rt];
-                break;
+                case 25: // MULTU
+                    break;
 
-            case 27:  // DIVU
-                break;
+                case 26: // DIV
+                    RegFile[lo] = RegFile[rs] / RegFile[rt];
+                    RegFile[hi] = RegFile[rs] % RegFile[rt];
+                    break;
 
-            case 32:             // ADD
-                RegFile[rd] = RegFile[rs] + RegFile[rt];
-                break;
+                case 27:  // DIVU
+                    break;
 
-            case 33:            // ADDU
-                break;
+                case 32:             // ADD
+                    RegFile[rd] = RegFile[rs] + RegFile[rt];
+                    break;
 
-            case 34:            // SUB
-                RegFile[rd] = RegFile[rs] - RegFile[rt];
-                break;
+                case 33:            // ADDU
+                    break;
 
-            case 35:            // SUBU
-                break;
+                case 34:            // SUB
+                    RegFile[rd] = RegFile[rs] - RegFile[rt];
+                    break;
 
-            case 36:  // AND
-                break;
+                case 35:            // SUBU
+                    break;
 
-            case 37: // OR
-                break;
+                case 36:  // AND
+                    break;
 
-            case 38: // XOR
-                RegFile[rd] = RegFile[rs] ^ RegFile[rt];
-                break;
+                case 37: // OR
+                    break;
 
-            case 39: // NOR
-                break;
+                case 38: // XOR
+                    RegFile[rd] = RegFile[rs] ^ RegFile[rt];
+                    break;
 
-            case 42: // SLT
-                break;
+                case 39: // NOR
+                    break;
 
-            case 43: // SLTU
-                break;
+                case 42: // SLT
+                    break;
 
+                case 43: // SLTU
+                    break;
+
+            }
+            break;
+
+            case 1:                     // REGIMM = 1
+
+            switch(rt) {
+                case 0:                 // BLTZ
+                    break;
+
+                case 1:                 // BGEZ
+                    break;
+
+                case 16:                // BLTZAL
+                    break;
+
+                case 17:                // BGEZAL
+                    break;
+            }
+                break;
+            case 2:                     // J
+
+                break;
+            case 3:                     // JAL
+                break;
+            case 4:                     // BEQ
+                break;
+            case 5:                     // BNE
+                break;
+            case 6:                     // BLEZ
+                break;
+            case 7:                     // BGTZ
+                break;
+            case 8:                     // ADDI
+                RegFile[rt] = RegFile[rs] + imme;
+                break;
+            case 9:                     // ADDIU
+                break;
+            case 10:                    // SLTI
+                if (RegFile[rs] < imme) {
+                    RegFile[rt] = 1;
+                }
+                else {
+                    RegFile[rt] = 0;
+                }
+                break;
+            case 11:                    // SLTIU
+                if (RegFile[rs] < imme) {
+                    RegFile[rt] = 1;
+                }
+                else {
+                    RegFile[rt] = 0;
+                }
+                break;
+            case 12:                    // ANDI
+                RegFile[rt] = RegFile[rs] & imme;
+                break;
+            case 13:                    // ORI
+                RegFile[rt] = RegFile[rs] | imme;
+                break;
+            case 14:                    // XORI
+                RegFile[rt] = RegFile[rs] ^ imme;
+                break;
+            case 15:                    // LUI
+                RegFile[rt] = (imme << 16);
+                break;
+            case 20:                    // BEQL
+                break;
+            case 21:                    // BNEL
+                break;
+            case 22:                    // BLEZL
+                break;
+            case 32:                    // LB
+                RegFile[rt] = readByte((base + offset), false);
+                break;
+            case 33:                    // LH
+                RegFile[rt] = readByte(base + offset, false);
+                RegFile[rt] = RegFile[rt] << 8;
+                RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);
+                break;
+            case 34:                    // LWL
+                RegFile[rt] = readByte(base + offset, false);
+                RegFile[rt] = RegFile[rt] << 24;
+                RegFile[rt] = RegFile[rt] | (readByte(base + offset + 1, false) << 16);     // +1 or +4 ???
+                break;
+            case 35:                    // LW
+                RegFile[rt] = readWord(base + offset, false);
+                break;
+            case 36:                    // LBU
+                RegFile[rt] = readByte(base + offset, false);
+                break;
+            case 37:                    // LHU
+                RegFile[rt] = readByte(base + offset, false);
+                RegFile[rt] = RegFile[rt] << 8;
+                RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);
+                break;
+            case 38:                    // LWR
+                RegFile[rt] = readByte(base + offset, false);
+                RegFile[rt] = RegFile[rt] << 8;
+                RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);     // +1 or +4 ???
+                break;
+            case 40:                    // SB
+                writeByte(base + offset, RegFile[rt], false);
+                break;
+            case 41:                    // SH
+                writeByte(base + offset, (RegFile[rt] << 16) >> 24, false);
+                writeByte(base + offset + 1, (RegFile[rt] << 24) >> 24, false);  // +1 or +4 ???
+                break;
+            case 42:                    // SWL
+                writeByte(base + offset, (RegFile[rt] >> 24), false);
+                writeByte(base + offset+1, ((RegFile[rt] << 8) >> 24), false);
+                break;
+            case 43:                    // SW
+                writeWord(base + offset, RegFile[rt], false);
+                break;
+            case 46:                    // SWR
+                writeByte(base + offset, ((RegFile[rt] << 16) >> 24), false);
+                writeByte(base + offset+1, ((RegFile[rt] << 24) >> 24), false);     // +1 or +4 ???
+                break;
         }
-        break;
 
-        case 1:                     // REGIMM = 1
-            break;
-        case 2:                     // J
-            break;
-        case 3:                     // JAL
-            break;
-        case 4:                     // BEQ
-            break;
-        case 5:                     // BNE
-            break;
-        case 6:                     // BLEZ
-            break;
-        case 7:                     // BGTZ
-            break;
-        case 8:                     // ADDI
-            RegFile[rt] = RegFile[rs] + imme;
-            break;
-        case 9:                     // ADDIU
-            break;
-        case 10:                    // SLTI
-            break;
-        case 11:                    // SLTIU
-            break;
-        case 12:                    // ANDI
-            break;
-        case 13:                    // ORI
-
-            break;
-        case 14:                    // XORI
-            // Format: XORI rt, rs, immediate
-            RegFile[rt] = RegFile[rs] ^ imme;
-            break;
-        case 15:                    // LUI
-            // Format: LUI rt, immediate
-            RegFile[rt] = imme;
-            break;
-        case 20:                    // BEQL
-            break;
-        case 21:                    // BNEL
-            break;
-        case 22:                    // BLEZL
-            break;
-        case 32:                    // LB
-            break;
-        case 33:                    // LH
-            break;
-        case 34:                    // LWL
-            break;
-        case 35:                    // LW
-            break;
-        case 36:                    // LBU
-            break;
-        case 37:                    // LHU
-            break;
-        case 38:                    // LWR
-            break;
-        case 40:                    // SB
-            // Format: SB rt, offset(base)
-            // memory[base+offset] ← rt
-            break;
-        case 41:                    // SH
-            // SH rt, offset(base)
-            // memory[base+offset] ← rt
-            break;
-        case 42:                    // SWL
-            break;
-        case 43:                    // SW
-            break;
-        case 46:                    // SWR
-            break;
-    }
-
-    PC = PC + 4;
-} //end fori
+        PC = PC + 4;
+    } //end fori
 
 
     //Close file pointers & free allocated Memory
