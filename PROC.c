@@ -127,6 +127,7 @@ int main(int argc, char * argv[]) {
     printf("The value of rd is:%zu\n", rd);
     printf("The value of imme is:%i\n", imme);
     printf("The value of sa is:%zu\n", sa);
+    printf("The value of instr_index is:%zu\n", instr_index);
 
         switch(opcode) {
             case 0:                     // SPECIAL = 0
