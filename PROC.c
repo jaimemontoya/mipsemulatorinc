@@ -13,6 +13,7 @@ uint32_t lo = 32;
 uint32_t hi = 33;
 uint64_t ans64;
 uint32_t temp;
+uint32_t boolJump = 0;
 
 void write_initialization_vector(uint32_t sp, uint32_t gp, uint32_t start) {
     printf("\n ----- BOOT Sequence ----- \n");
@@ -63,12 +64,17 @@ uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts
     return (hs >> 27);
 }
 
+uint32_t get_ii(uint32_t hs) {            // get shift amt for shifts
+    hs = (hs << 26);       
+    return (hs >> 26);
+}
+
 int main(int argc, char * argv[]) {
 
     int MaxInst = 0;
     int status = 0;
     uint32_t i;
-    uint32_t PC,newPC;
+    uint32_t PC, jumpAddress, linkAddress;
     uint32_t CurrentInstruction;
 
     if (argc < 2) {
@@ -110,6 +116,7 @@ int main(int argc, char * argv[]) {
     int32_t imme = get_immediate(CurrentInstruction);
     uint32_t offset = get_offset(CurrentInstruction);
     uint32_t sa = get_sa(CurrentInstruction);           // shift amount
+    uint32_t instr_index = get_ii(CurrentInstruction);           // shift amount
 
     
     printf("Iteration:%i\n", i);
@@ -140,21 +147,30 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 3: // SRA
+                    RegFile[rd] = RegFile[rt] >> sa;
                     break;
 
-                case 4: // SSLV
+                case 4: // SLLV
+                    RegFile[rd] = RegFile[rt] << RegFile[rs];
                     break;
 
                 case 6: // SRLV
+                    RegFile[rd] = RegFile[rt] >> RegFile[rs];
                     break;
 
                 case 7: // SRAV
+                    RegFile[rd] = RegFile[rt] >> RegFile[rs];
                     break;
 
                 case 8: // JR
+                    boolJump++;
+                    jumpAddress = RegFile[rs];
                     break;
 
                 case 9: // JALR
+                    boolJump++
+                    RegFile[rd] = PC + 8;
+                    jumpAddress = RegFile[rs];
                     break;
 
                 case 16: // MFHI
@@ -162,6 +178,7 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 17: // MTHI
+                    RegFile[hi] = RegFile[rs];
                     break;
 
                 case 18: // MFLO
@@ -169,6 +186,7 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 19: // MTLO
+                    RegFile[lo] = RegFile[rs];
                     break;
 
                 case 24: // MULT
@@ -178,6 +196,9 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 25: // MULTU
+                    ans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
+                    RegFile[lo] = (uint32_t)((ans64 << 32) >> 32);
+                    RegFile[hi] = (uint32_t)(ans64 >> 32);
                     break;
 
                 case 26: // DIV
@@ -186,6 +207,8 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 27:  // DIVU
+                    RegFile[lo] = RegFile[rs] / RegFile[rt];
+                    RegFile[hi] = RegFile[rs] % RegFile[rt];
                     break;
 
                 case 32:             // ADD
@@ -193,6 +216,7 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 33:            // ADDU
+                    RegFile[rd] = RegFile[rs] + RegFile[rt];
                     break;
 
                 case 34:            // SUB
@@ -200,12 +224,15 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 35:            // SUBU
+                    RegFile[rd] = RegFile[rs] - RegFile[rt];
                     break;
 
                 case 36:  // AND
+                    RegFile[rd] = RegFile[rs] & RegFile[rt];
                     break;
 
                 case 37: // OR
+                    RegFile[rd] = RegFile[rs] | RegFile[rt];
                     break;
 
                 case 38: // XOR
@@ -213,12 +240,23 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 39: // NOR
+                    RegRile[rd] = !(RegFile[rs] | RegFile[rt]);
                     break;
 
                 case 42: // SLT
+                    if(RegFile[rs] < RegFile[rt]){
+                        RegFile[rd] = 1;
+                    }else{
+                        RegFile[rd] = 0;
+                    }
                     break;
 
                 case 43: // SLTU
+                    if(RegFile[rs] < RegFile[rt]){
+                        RegFile[rd] = 1;
+                    }else{
+                        RegFile[rd] = 0;
+                    }
                     break;
 
             }
@@ -228,36 +266,77 @@ int main(int argc, char * argv[]) {
 
             switch(rt) {
                 case 0:                 // BLTZ
+                if (RegFile[rs] < 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
                     break;
 
                 case 1:                 // BGEZ
+                if (RegFile[rs] >= 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
                     break;
 
                 case 16:                // BLTZAL
+                if (RegFile[rs] < 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                    linkAddress = PC + 8;
+                }
                     break;
 
                 case 17:                // BGEZAL
+                if (RegFile[rs] >= 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                    linkAddress = PC + 8;
+                }
                     break;
             }
                 break;
             case 2:                     // J
-
+                boolJump++;
+                jumpAddress = instr_index;
                 break;
             case 3:                     // JAL
+                boolJump++;
+                jumpAddress = instr_index;
+                linkAddress = (PC + 8);
                 break;
             case 4:                     // BEQ
+                if (RegFile[rs] == RegFile[rt]) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
                 break;
             case 5:                     // BNE
+                if (RegFile[rs] != RegFile[rt]) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
                 break;
             case 6:                     // BLEZ
+                if (RegFile[rs] <= 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
                 break;
             case 7:                     // BGTZ
+                if (RegFile[rs] > 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
                 break;
             case 8:                     // ADDI
                 RegFile[rt] = RegFile[rs] + imme;
                 break;
+
             case 9:                     // ADDIU
+                RegFile[rt] = RegFile[rs] + imme;
                 break;
+
             case 10:                    // SLTI
                 if (RegFile[rs] < imme) {
                     RegFile[rt] = 1;
@@ -287,11 +366,34 @@ int main(int argc, char * argv[]) {
                 RegFile[rt] = (imme << 16);
                 break;
             case 20:                    // BEQL
+                if (RegFile[rs] == RegFile[rt]) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
+                else {
+                    PC = PC + 4;
+                }
                 break;
             case 21:                    // BNEL
+                if (RegFile[rs] != RegFile[rt]) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
+                else {
+                    PC = PC + 4;
+                }
                 break;
+
             case 22:                    // BLEZL
+                if (RegFile[rs] <= 0) {
+                    boolJump++;
+                    jumpAddress = PC + 4 + (offset << 2);
+                }
+                else {
+                    PC = PC + 4;
+                }
                 break;
+
             case 32:                    // LB
                 RegFile[rt] = readByte((base + offset), false);
                 break;
@@ -340,8 +442,19 @@ int main(int argc, char * argv[]) {
                 writeByte(base + offset+1, ((RegFile[rt] << 24) >> 24), false);     // +1 or +4 ???
                 break;
         }
-
-        PC = PC + 4;
+        if (boolJump > 0) {                         // for branch delay
+            if (boolJump > 1) {
+                PC = (jumpAddress);
+                boolJump = 0;
+            }
+            else {
+                boolJump++;
+                PC = PC + 4;
+            }
+        }
+        else {
+            PC = PC + 4;
+        }
     } //end fori
 
 
