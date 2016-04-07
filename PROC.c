@@ -342,7 +342,7 @@ int main(int argc, char * argv[]) {
                 }
                 break;
             case 11:                    // SLTIU
-                if (RegFile[rs] < imme) {
+                if ((uint32_t) RegFile[rs] < (uint32_t) imme) {
                     RegFile[rt] = 1;
                 }
                 else {
@@ -421,12 +421,12 @@ int main(int argc, char * argv[]) {
                 RegFile[rt] = readWord(base + offset, false);
                 break;
             case 36:                    // LBU
-                RegFile[rt] = readByte(base + offset, false);
+                RegFile[rt] = (uint32_t) readByte(base + offset, false);
                 break;
             case 37:                    // LHU
-                RegFile[rt] = readByte(base + offset, false);
-                RegFile[rt] = RegFile[rt] << 8;
-                RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);
+                RegFile[rt] = (uint32_t) readByte(base + offset, false);
+                RegFile[rt] = (uint32_t) RegFile[rt] << 8;
+                RegFile[rt] = (uint32_t) RegFile[rt] | (uint32_t) readByte(base + offset + 1, false);
                 break;
             case 38:                    // LWR
                 if ((base + offset) % 4 == 3) {
@@ -454,15 +454,41 @@ int main(int argc, char * argv[]) {
                 writeByte(base + offset + 1, (RegFile[rt] << 24) >> 24, false);  // +1 or +4 ???
                 break;
             case 42:                    // SWL
-                writeByte(base + offset, (RegFile[rt] >> 24), false);
-                writeByte(base + offset+1, ((RegFile[rt] << 8) >> 24), false);
+                if ((base + offset) % 4 == 0) {
+                    writeWord(base + offset, RegFile[rt], false);
+                }
+                else if ((base + offset) % 4 == 1) {
+                    writeWord(base + offset, (loadWord(base + offset, false) & 0x000000FF) |
+                        (RegFile[rt] &  0xFFFFFF00), false);
+                }
+                else if ((base + offset) % 4 == 2) {
+                    writeWord(base + offset, (loadWord(base + offset, false) & 0x0000FFFF) |
+                        (RegFile[rt] &  0xFFFF0000), false);
+                }
+                else if ((base + offset) % 4 == 3) {
+                    writeWord(base + offset, (loadWord(base + offset, false) & 0x00FFFFFF) |
+                        (RegFile[rt] &  0xFF000000), false);
+                }
                 break;
             case 43:                    // SW
                 writeWord(base + offset, RegFile[rt], false);
                 break;
             case 46:                    // SWR
-                writeByte(base + offset, ((RegFile[rt] << 16) >> 24), false);
-                writeByte(base + offset+1, ((RegFile[rt] << 24) >> 24), false);     // +1 or +4 ???
+                if ((base + offset) % 4 == 3) {
+                    writeWord(base + offset - 3, RegFile[rt], false);
+                }
+                if ((base + offset) % 4 == 2) {
+                    writeWord(base + offset - 3, (loadWord(base + offset - 3, false) & 0xFF000000) |
+                        (RegFile[rt] &  0x00FFFFFF), false);
+                }
+                if ((base + offset) % 4 == 1) {
+                    writeWord(base + offset - 3, (loadWord(base + offset - 3, false) & 0xFFFF0000) |
+                        (RegFile[rt] &  0x0000FFFF), false);
+                }
+                if ((base + offset) % 4 == 0) {
+                    writeWord(base + offset - 3, (loadWord(base + offset - 3, false) & 0xFFFFFF00) |
+                        (RegFile[rt] &  0x000000FF), false);
+                }
                 break;
         }
         if (boolJump > 0) {                         // for branch delay
