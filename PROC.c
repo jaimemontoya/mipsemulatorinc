@@ -9,8 +9,8 @@
 //Stats
 
 uint32_t DynInstCount = 0;
-uint32_t lo = 32;
-uint32_t hi = 33;
+uint32_t hi = 32;
+uint32_t lo = 33;
 int64_t ans64;
 uint64_t uans64;
 uint32_t temp;
