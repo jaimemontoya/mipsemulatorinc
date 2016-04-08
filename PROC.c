@@ -26,25 +26,29 @@ void write_initialization_vector(uint32_t sp, uint32_t gp, uint32_t start) {
 
 }
 
-uint32_t get_opcode(uint32_t hs) {           // find opcode - first step of decoding
-    return (hs & 0xFC000000);
-}
-
-uint32_t get_function(uint32_t hs) {         // get function if opcode 0 or 1
-    return (hs & 0x0000003F);
-}
-
-uint32_t get_rs(uint32_t hs) {       // rs is always operated on
-    return (hs & 0x03E00000);
-}
-
-uint32_t get_rt(uint32_t hs) {       // destination register for immediates, else it's operated on
-    return (hs & 0x001F0000);
-}
-
-uint32_t get_rd(uint32_t hs) {       // destination register for special
-    return (hs & 0x0000F800);
-}
+ uint32_t get_opcode(uint32_t hs) {           // find opcode - first step of decoding
+     return (hs >> 26);
+ }
+ 
+ uint32_t get_function(uint32_t hs) {         // get function if opcode 0 or 1
+     hs = hs << 26;
+     return (hs >> 26);
+ }
+ 
+ uint32_t get_rs(uint32_t hs) {       // rs is always operated on
+     hs = hs << 6;
+     return (hs >> 27);
+ }
+ 
+ uint32_t get_rt(uint32_t hs) {       // destination register for immediates, else it's operated on
+     hs = (hs << 11);
+     return (hs >> 27);
+ }
+ 
+ uint32_t get_rd(uint32_t hs) {       // destination register for special
+     hs = (hs << 16);
+     return (hs >> 27);
+ }
 
 int32_t get_immediate(int32_t hs) {            // immediate constant to operate on
     hs = (hs << 16);                  // still need to test for negatives
@@ -56,13 +60,15 @@ int32_t get_offset(int32_t hs) {            // immediate constant to operate on
     return (hs >> 16);
 }
 
-uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts    
-    return (hs & 0x000007C0);
-}
-
-uint32_t get_ii(uint32_t hs) {            // get shift amt for shifts
-    return (hs & 0x03FFFFFF);
-}
+ uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts
+     hs = (hs << 21);       
+     return (hs >> 27);
+ }
+ 
+ uint32_t get_ii(uint32_t hs) {            // get shift amt for shifts
+     hs = (hs << 26);       
+     return (hs >> 26);
+ }
 
 int main(int argc, char * argv[]) {
 
