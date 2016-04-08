@@ -11,7 +11,8 @@
 uint32_t DynInstCount = 0;
 uint32_t lo = 32;
 uint32_t hi = 33;
-uint64_t ans64;
+int64_t ans64;
+uint64_t uans64;
 uint32_t temp;
 uint32_t boolJump = 0;
 
@@ -25,49 +26,49 @@ void write_initialization_vector(uint32_t sp, uint32_t gp, uint32_t start) {
 
 }
 
-uint32_t get_opcode(uint32_t hs) {           // find opcode - first step of decoding
-    return (hs >> 26);
-}
-
-uint32_t get_function(uint32_t hs) {         // get function if opcode 0 or 1
-    hs = hs << 26;
-    return (hs >> 26);
-}
-
-uint32_t get_rs(uint32_t hs) {       // rs is always operated on
-    hs = hs << 6;
-    return (hs >> 27);
-}
-
-uint32_t get_rt(uint32_t hs) {       // destination register for immediates, else it's operated on
-    hs = (hs << 11);
-    return (hs >> 27);
-}
-
-uint32_t get_rd(uint32_t hs) {       // destination register for special
-    hs = (hs << 16);
-    return (hs >> 27);
-}
+ uint32_t get_opcode(uint32_t hs) {           // find opcode - first step of decoding
+     return (hs >> 26);
+ }
+ 
+ uint32_t get_function(uint32_t hs) {         // get function if opcode 0 or 1
+     hs = hs << 26;
+     return (hs >> 26);
+ }
+ 
+ uint32_t get_rs(uint32_t hs) {       // rs is always operated on
+     hs = hs << 6;
+     return (hs >> 27);
+ }
+ 
+ uint32_t get_rt(uint32_t hs) {       // destination register for immediates, else it's operated on
+     hs = (hs << 11);
+     return (hs >> 27);
+ }
+ 
+ uint32_t get_rd(uint32_t hs) {       // destination register for special
+     hs = (hs << 16);
+     return (hs >> 27);
+ }
 
 int32_t get_immediate(int32_t hs) {            // immediate constant to operate on
-    hs = ((int32_t) hs << 16);                  // still need to test for negatives
-    return (hs >> 16);
-}
-
-uint32_t get_offset(uint32_t hs) {            // immediate constant to operate on
     hs = (hs << 16);                  // still need to test for negatives
     return (hs >> 16);
 }
 
-uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts
-    hs = (hs << 21);       
-    return (hs >> 27);
+int32_t get_offset(int32_t hs) {            // immediate constant to operate on
+    hs = (hs << 16);                  // still need to test for negatives
+    return (hs >> 16);
 }
 
-uint32_t get_ii(uint32_t hs) {            // get shift amt for shifts
-    hs = (hs << 26);       
-    return (hs >> 26);
-}
+ uint32_t get_sa(uint32_t hs) {            // get shift amt for shifts
+     hs = (hs << 21);       
+     return (hs >> 27);
+ }
+ 
+ uint32_t get_ii(uint32_t hs) {            // get shift amt for shifts
+     hs = (hs << 26);       
+     return (hs >> 26);
+ }
 
 int main(int argc, char * argv[]) {
 
@@ -114,20 +115,21 @@ int main(int argc, char * argv[]) {
     uint32_t rt = get_rt(CurrentInstruction);
     uint32_t rd = get_rd(CurrentInstruction);           // destination register
     int32_t imme = get_immediate(CurrentInstruction);
-    uint32_t offset = get_offset(CurrentInstruction);
+    int32_t offset = get_offset(CurrentInstruction);
     uint32_t sa = get_sa(CurrentInstruction);           // shift amount
     uint32_t instr_index = get_ii(CurrentInstruction);           // shift amount
 
     
     printf("Iteration:%i\n", i);
-    printf("The value of opcode is:%zu\n", opcode);
-    printf("The value of function is:%zu\n", functionvalue);
-    printf("The value of rs is:%zu\n", rs);
-    printf("The value of rt is:%zu\n", rt);
-    printf("The value of rd is:%zu\n", rd);
+    printf("The value of opcode is:%d\n", opcode);
+    printf("The value of function is:%d\n", functionvalue);
+    printf("The value of rs is:%d\n", rs);
+    printf("The value of rt is:%d\n", rt);
+    printf("The value of rd is:%d\n", rd);
     printf("The value of imme is:%i\n", imme);
-    printf("The value of sa is:%zu\n", sa);
-    printf("The value of instr_index is:%zu\n", instr_index);
+    printf("The value of offset is:%i\n", offset);
+    printf("The value of sa is:%d\n", sa);
+    printf("The value of instr_index is:%d\n", instr_index);
 
         switch(opcode) {
             case 0:                     // SPECIAL = 0
@@ -141,10 +143,9 @@ int main(int argc, char * argv[]) {
                         RegFile[rd] = RegFile[rt] << sa;       // SLL
                         break;
                     }
-                    //writeWord(rd, (rt << sa), true);
 
                 case 2: // SRL
-                    RegFile[rd] = (RegFile[rt] >> sa);
+                    RegFile[rd] = (int32_t)((uint32_t) RegFile[rt] >> sa);      // TEST THIS
                     break;
 
                 case 3: // SRA
@@ -156,7 +157,7 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 6: // SRLV
-                    RegFile[rd] = RegFile[rt] >> RegFile[rs];
+                    RegFile[rd] = (int32_t) ((uint32_t) RegFile[rt] >> RegFile[rs]);        // TEST
                     break;
 
                 case 7: // SRAV
@@ -169,7 +170,7 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 9: // JALR
-                    boolJump++
+                    boolJump++;
                     RegFile[rd] = PC + 8;
                     jumpAddress = RegFile[rs];
                     break;
@@ -191,15 +192,15 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 24: // MULT
-                    ans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
-                    RegFile[lo] = (uint32_t)((ans64 << 32) >> 32);
-                    RegFile[hi] = (uint32_t)(ans64 >> 32);
+                    ans64 = (int64_t) RegFile[rs] * (int64_t) RegFile[rt];
+                    RegFile[lo] = (int32_t)((ans64 << 32) >> 32);
+                    RegFile[hi] = (int32_t)(ans64 >> 32);
                     break;
 
                 case 25: // MULTU
-                    ans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
-                    RegFile[lo] = (uint32_t)((ans64 << 32) >> 32);
-                    RegFile[hi] = (uint32_t)(ans64 >> 32);
+                    uans64 = (uint64_t) RegFile[rs] * (uint64_t) RegFile[rt];
+                    RegFile[lo] = (uint32_t)((uans64 << 32) >> 32);
+                    RegFile[hi] = (uint32_t)(uans64 >> 32);
                     break;
 
                 case 26: // DIV
@@ -208,8 +209,8 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 27:  // DIVU
-                    RegFile[lo] = RegFile[rs] / RegFile[rt];
-                    RegFile[hi] = RegFile[rs] % RegFile[rt];
+                    RegFile[lo] = (uint32_t) RegFile[rs] / (uint32_t) RegFile[rt];
+                    RegFile[hi] = (uint32_t) RegFile[rs] % (uint32_t) RegFile[rt];
                     break;
 
                 case 32:             // ADD
@@ -241,21 +242,21 @@ int main(int argc, char * argv[]) {
                     break;
 
                 case 39: // NOR
-                    RegRile[rd] = !(RegFile[rs] | RegFile[rt]);
+                    RegFile[rd] = !(RegFile[rs] | RegFile[rt]);
                     break;
 
                 case 42: // SLT
-                    if(RegFile[rs] < RegFile[rt]){
+                    if (RegFile[rs] < RegFile[rt]){
                         RegFile[rd] = 1;
-                    }else{
+                    } else {
                         RegFile[rd] = 0;
                     }
                     break;
 
                 case 43: // SLTU
-                    if(RegFile[rs] < RegFile[rt]){
+                    if ((uint32_t) RegFile[rs] < (uint32_t) RegFile[rt]){
                         RegFile[rd] = 1;
-                    }else{
+                    } else {
                         RegFile[rd] = 0;
                     }
                     break;
@@ -334,7 +335,7 @@ int main(int argc, char * argv[]) {
                 RegFile[rt] = RegFile[rs] + imme;
                 break;
 
-            case 9:                     // ADDIU
+            case 9:                     // ADDIU            // U means allow overflow
                 RegFile[rt] = RegFile[rs] + imme;
                 break;
 
@@ -347,7 +348,7 @@ int main(int argc, char * argv[]) {
                 }
                 break;
             case 11:                    // SLTIU
-                if (RegFile[rs] < imme) {
+                if ((uint32_t) RegFile[rs] < (uint32_t) imme) {
                     RegFile[rt] = 1;
                 }
                 else {
@@ -366,34 +367,36 @@ int main(int argc, char * argv[]) {
             case 15:                    // LUI
                 RegFile[rt] = (imme << 16);
                 break;
-            case 20:                    // BEQL
-                if (RegFile[rs] == RegFile[rt]) {
-                    boolJump++;
-                    jumpAddress = PC + 4 + (offset << 2);
-                }
-                else {
-                    PC = PC + 4;
-                }
-                break;
-            case 21:                    // BNEL
-                if (RegFile[rs] != RegFile[rt]) {
-                    boolJump++;
-                    jumpAddress = PC + 4 + (offset << 2);
-                }
-                else {
-                    PC = PC + 4;
-                }
-                break;
 
-            case 22:                    // BLEZL
-                if (RegFile[rs] <= 0) {
-                    boolJump++;
-                    jumpAddress = PC + 4 + (offset << 2);
-                }
-                else {
-                    PC = PC + 4;
-                }
-                break;
+            // TOLD THAT WE DONT NEED TO IMPLEMENT BRANCH LIKELY INSTRUCTIONS
+            // case 20:                    // BEQL
+            //     if (RegFile[rs] == RegFile[rt]) {
+            //         boolJump++;
+            //         jumpAddress = PC + 4 + (offset << 2);
+            //     }
+            //     else {
+            //         PC = PC + 4;
+            //     }
+            //     break;
+            // case 21:                    // BNEL
+            //     if (RegFile[rs] != RegFile[rt]) {
+            //         boolJump++;
+            //         jumpAddress = PC + 4 + (offset << 2);
+            //     }
+            //     else {
+            //         PC = PC + 4;
+            //     }
+            //     break;
+
+            // case 22:                    // BLEZL
+            //     if (RegFile[rs] <= 0) {
+            //         boolJump++;
+            //         jumpAddress = PC + 4 + (offset << 2);
+            //     }
+            //     else {
+            //         PC = PC + 4;
+            //     }
+            //     break;
 
             case 32:                    // LB
                 RegFile[rt] = readByte((base + offset), false);
@@ -404,25 +407,50 @@ int main(int argc, char * argv[]) {
                 RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);
                 break;
             case 34:                    // LWL
-                RegFile[rt] = readByte(base + offset, false);
-                RegFile[rt] = RegFile[rt] << 24;
-                RegFile[rt] = RegFile[rt] | (readByte(base + offset + 1, false) << 16);     // +1 or +4 ???
+                if ((base + offset) % 4 == 0) {
+                    RegFile[rt] = readWord(base + offset, false);
+                }
+                else if ((base + offset) % 4 == 1) {
+                    RegFile[rt] = ((RegFile[rt] & 0x000000FF) | 
+                        (0xFFFFFF00 & readWord(base + offset, false)));
+                }
+                else if ((base + offset) % 4 == 2) {
+                    RegFile[rt] = ((RegFile[rt] & 0x0000FFFF) | 
+                        (0xFFFF0000 & readWord(base + offset, false)));
+                }
+                else if ((base + offset) % 4 == 3) {
+                    RegFile[rt] = ((RegFile[rt] & 0x00FFFFFF) | 
+                        (0xFF000000 & readWord(base + offset, false)));
+                }
                 break;
             case 35:                    // LW
                 RegFile[rt] = readWord(base + offset, false);
                 break;
             case 36:                    // LBU
-                RegFile[rt] = readByte(base + offset, false);
+                RegFile[rt] = (uint32_t) readByte(base + offset, false);
                 break;
             case 37:                    // LHU
-                RegFile[rt] = readByte(base + offset, false);
-                RegFile[rt] = RegFile[rt] << 8;
-                RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);
+                RegFile[rt] = (uint32_t) readByte(base + offset, false);
+                RegFile[rt] = (uint32_t) RegFile[rt] << 8;
+                RegFile[rt] = (uint32_t) RegFile[rt] | (uint32_t) readByte(base + offset + 1, false);
                 break;
             case 38:                    // LWR
-                RegFile[rt] = readByte(base + offset, false);
-                RegFile[rt] = RegFile[rt] << 8;
-                RegFile[rt] = RegFile[rt] | readByte(base + offset + 1, false);     // +1 or +4 ???
+                if ((base + offset) % 4 == 3) {
+                    RegFile[rt] = readWord(base + offset - 3, false);
+                }
+                if ((base + offset) % 4 == 2) {
+                    RegFile[rt] = ((RegFile[rt] & 0xFF000000) | 
+                        (0x00FFFFFF & readWord(base + offset - 3, false)));
+                }
+                if ((base + offset) % 4 == 1) {
+                    RegFile[rt] = ((RegFile[rt] & 0xFFFF0000) | 
+                        (0x0000FFFF & readWord(base + offset - 3, false)));
+                }
+                if ((base + offset) % 4 == 0) {
+                    RegFile[rt] = ((RegFile[rt] & 0xFFFFFF00) | 
+                        (0x000000FF & readWord(base + offset - 3, false)));
+                }
+
                 break;
             case 40:                    // SB
                 writeByte(base + offset, RegFile[rt], false);
@@ -432,15 +460,41 @@ int main(int argc, char * argv[]) {
                 writeByte(base + offset + 1, (RegFile[rt] << 24) >> 24, false);  // +1 or +4 ???
                 break;
             case 42:                    // SWL
-                writeByte(base + offset, (RegFile[rt] >> 24), false);
-                writeByte(base + offset+1, ((RegFile[rt] << 8) >> 24), false);
+                if ((base + offset) % 4 == 0) {
+                    writeWord(base + offset, RegFile[rt], false);
+                }
+                else if ((base + offset) % 4 == 1) {
+                    writeWord(base + offset, (readWord(base + offset, false) & 0x000000FF) |
+                        (RegFile[rt] &  0xFFFFFF00), false);
+                }
+                else if ((base + offset) % 4 == 2) {
+                    writeWord(base + offset, (readWord(base + offset, false) & 0x0000FFFF) |
+                        (RegFile[rt] &  0xFFFF0000), false);
+                }
+                else if ((base + offset) % 4 == 3) {
+                    writeWord(base + offset, (readWord(base + offset, false) & 0x00FFFFFF) |
+                        (RegFile[rt] &  0xFF000000), false);
+                }
                 break;
             case 43:                    // SW
                 writeWord(base + offset, RegFile[rt], false);
                 break;
             case 46:                    // SWR
-                writeByte(base + offset, ((RegFile[rt] << 16) >> 24), false);
-                writeByte(base + offset+1, ((RegFile[rt] << 24) >> 24), false);     // +1 or +4 ???
+                if ((base + offset) % 4 == 3) {
+                    writeWord(base + offset - 3, RegFile[rt], false);
+                }
+                if ((base + offset) % 4 == 2) {
+                    writeWord(base + offset - 3, (readWord(base + offset - 3, false) & 0xFF000000) |
+                        (RegFile[rt] &  0x00FFFFFF), false);
+                }
+                if ((base + offset) % 4 == 1) {
+                    writeWord(base + offset - 3, (readWord(base + offset - 3, false) & 0xFFFF0000) |
+                        (RegFile[rt] &  0x0000FFFF), false);
+                }
+                if ((base + offset) % 4 == 0) {
+                    writeWord(base + offset - 3, (readWord(base + offset - 3, false) & 0xFFFFFF00) |
+                        (RegFile[rt] &  0x000000FF), false);
+                }
                 break;
         }
         if (boolJump > 0) {                         // for branch delay
